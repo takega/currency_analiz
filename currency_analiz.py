@@ -99,7 +99,7 @@ plt.show()
 
 #Прогнозируем KGS
 y = full[:-1].KGS
-#y.to_excel('y.xlsx')
+
 X = full[:-1].drop('KGS', axis=1)
 #y = y.dropna()
 #X= X.dropna()
