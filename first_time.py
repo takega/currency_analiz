@@ -7,9 +7,9 @@ from pprint import pprint
 
 currences=['KRW','KGS','USD','CNY']
 url = 'http://www.cbr.ru/scripts/XML_daily.asp?date_req='
-date = datetime.now()-timedelta(days=30)
+date = datetime.now()-timedelta(days=150)
 result_df=pd.DataFrame()
-for i in range(30):
+for i in range(150):
     date = date.strftime('%d/%m/%Y')
     response = requests.get(url + date)
     tree = xmltodict.parse(response.content)
