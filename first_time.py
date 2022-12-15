@@ -19,6 +19,8 @@ for i in range(30):
     # Создаем таблицу с нужными данными
     df = pd.DataFrame(tree['ValCurs']['Valute'])
     df['Date'] = tree['ValCurs']['@Date']
+
+
     df = df.set_index(['CharCode'])
     result_df=result_df.append(df.loc[currences])
 for name in currences:
