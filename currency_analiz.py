@@ -18,7 +18,7 @@ from sklearn.ensemble import RandomForestRegressor
 currences = ['KRW', 'KGS', 'USD', 'CNY']
 
 bot = telebot.TeleBot(api_token)
-print(bot)
+
 
 
 keyboard1 = telebot.types.ReplyKeyboardMarkup()
@@ -32,7 +32,7 @@ def start_message(message):
 def send_text(message):
     if message.text == 'Да':
         bot.send_message(message.chat.id, 'Хорошо..')
-        bot.register_next_step_handler(message, begin)
+        bot.register_next_step_handler(message, job)
     if message.text == 'Нет':
         bot.send_message(message.chat.id, 'Пока..')
 
@@ -76,13 +76,6 @@ def storage(name):
     name.pop('Nominal')
     # name['month'] = name["Date"].dt.month
     return name
-
-
-def job():
-    for currency in currences:
-        storage(currency)
-
-
 
 
 # Составляем таблицу с исходными данными
@@ -167,7 +160,7 @@ def model_2(X_train,
     return model.predict(full[1:].drop("target", axis=1))
 
 
-def pred(currency_name):
+def pred(message,currency_name):
     global full
     print('\n')
     X_train, y_train, X_test, y_test, X, y = train_data(currency_name)
@@ -184,33 +177,58 @@ def pred(currency_name):
     plt.plot(result[currency_name], label=currency_name)
     plt.plot(result['Предсказание на завтра'], label='предсказание')
     plt.legend()
+    graf_name = currency_name + '_fig.png'
+    plt.savefig(graf_name)
+
+
     plt.show()
+
+
+
+    bot.send_message(message.chat.id, '************')
+    #bot.send_message(message.chat.id, f'Код валюты: {currency_name}')
     try:
         time_now = (datetime.now()).strftime('%Y-%m-%d')
         print(f'Курс {currency_name} сегодня ({time_now}): \n {result.loc[time_now][currency_name]}')
-
+        bot.send_message(message.chat.id, f'Курс {currency_name} сегодня ({time_now}): \n {result.loc[time_now][currency_name]}')
     except:
         time_now = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
         print(f'Курс {currency_name} сегодня ({time_now}): {result.loc[time_now][currency_name]}')
-    print(f'Минимальный курс {currency_name} : {last_10} дата: {result.index[result[currency_name] == last_10][0]}')
-    print(f'дней назад: {day_ago}')
+        bot.send_message(message.chat.id,
+                         f'Курс {currency_name} сегодня ({time_now}):  {result.loc[time_now][currency_name]}')
+    print(f'Минимальный курс {currency_name} за последние пару недель: {last_10} дата: {result.index[result[currency_name] == last_10][0]}')
+    bot.send_message(message.chat.id,
+                     f'Минимальный курс {currency_name} за последние пару недель: {last_10} дата: {result.index[result[currency_name] == last_10][0]}')
+    #print(f'дней назад: {day_ago}')
+    #bot.send_message(message.chat.id, f'дней назад: {day_ago}')
     print(f'Прогнозирую курс {currency_name} на завтра: {round(pred_2[-1], 3)}')
+    bot.send_message(message.chat.id,
+                     f'Прогнозирую курс {currency_name} на завтра: {round(pred_2[-1], 3)}')
     if result[currency_name][-15:].mean() > result.loc[time_now][currency_name]:
         print('Сегодня выгодный курс, по крайней мере выгоднее чем вчера')
+        bot.send_message(message.chat.id,
+                         'ПОКУПАЙ!!!! Сегодня весьма выгодный курс.')
     else:
         print('Сегодня не рекомендую покупать валюту')
+        bot.send_message(message.chat.id,
+                         f'Сегодня не рекомендую покупать {currency_name}')
+
+    photo = open(graf_name, 'rb')
+    bot.send_photo(message.chat.id, photo)
+
+
     # print(result.loc[time_now][currency_name])
 
 
-def begin(message):
-    print(message)
-    for name in currences:
-        pred(name)
+def job(message):
+    for currency in currences:
+        storage(currency)
+        pred(message, currency)
 
 
 bot.infinity_polling(interval=0, timeout=20)
 
-#schedule.every().day.at("09:00").do(job)
-#while True:
-    #schedule.run_pending()
-    #time.sleep(1)
+schedule.every().day.at("09:00").do(job)
+while True:
+    schedule.run_pending()
+    time.sleep(1)
