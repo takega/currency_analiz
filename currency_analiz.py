@@ -22,16 +22,18 @@ bot = telebot.TeleBot(api_token)
 
 
 keyboard1 = telebot.types.ReplyKeyboardMarkup()
-keyboard1.row('Да', 'Нет')
+keyboard1.add('Да', 'Нет')
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    bot.send_message(message.chat.id, 'Начнем работу?')
-
+    bot.send_message(message.chat.id, 'Начнем работу?',  reply_markup=keyboard1)
+    bot.register_next_step_handler(message, send_text)
 
 @bot.message_handler(content_types=['text'])
 def send_text(message):
+
     if message.text == 'Да':
-        bot.send_message(message.chat.id, 'Хорошо..')
+
+        bot.send_message(message.chat.id, 'Уверены? Нажмите Да еще раз..')
         bot.register_next_step_handler(message, job)
     if message.text == 'Нет':
         bot.send_message(message.chat.id, 'Пока..')
@@ -179,12 +181,7 @@ def pred(message,currency_name):
     plt.legend()
     graf_name = currency_name + '_fig.png'
     plt.savefig(graf_name)
-
-
     plt.show()
-
-
-
     bot.send_message(message.chat.id, '************')
     #bot.send_message(message.chat.id, f'Код валюты: {currency_name}')
     try:
@@ -192,7 +189,7 @@ def pred(message,currency_name):
         print(f'Курс {currency_name} сегодня ({time_now}): \n {result.loc[time_now][currency_name]}')
         bot.send_message(message.chat.id, f'Курс {currency_name} сегодня ({time_now}): \n {result.loc[time_now][currency_name]}')
     except:
-        time_now = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        time_now = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
         print(f'Курс {currency_name} сегодня ({time_now}): {result.loc[time_now][currency_name]}')
         bot.send_message(message.chat.id,
                          f'Курс {currency_name} сегодня ({time_now}):  {result.loc[time_now][currency_name]}')
