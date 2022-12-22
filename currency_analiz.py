@@ -57,6 +57,9 @@ def currency_today(valute):
 def convert_to_datetime(row):
     return datetime.strptime(row['Date'], '%d.%m.%Y')
 
+def convert_to_val(row):
+    return row['Value'] / int(row['Nominal'])
+
 
 # Скачиваем файл с данными
 def storage(name):
@@ -72,6 +75,7 @@ def storage(name):
     name['Value'] = name['Value'].str.replace(',', '.')
     name.Value = name.Value.apply(lambda x: float(x))
     name['Date'] = name.apply(convert_to_datetime, axis=1)
+    name['Value'] = name.apply(convert_to_val, axis=1)
     name.pop('NumCode')
     name.pop('@ID')
     name.pop('Name')
@@ -114,13 +118,6 @@ for day in range(1, 8):
         full[name] = full[names].shift(day)
 
 full = full.dropna()
-plt.plot(full.USD, label="USD")
-plt.plot(full.KRW, label="KRW")
-plt.plot(full.KGS, label="KGS")
-plt.plot(full.CNY, label="CNY")
-plt.legend()
-plt.show()
-
 
 # Прогнозируем
 def train_data(currency_name):
@@ -171,17 +168,15 @@ def pred(message,currency_name):
     full = full[1:]
     # full['Предсказание на завтра #1'] = pred_1
     full['Предсказание на завтра'] = pred_2
-
     result = full[[currency_name, 'Предсказание на завтра']]
     result.to_excel(currency_name + '_pred.xlsx')
     last_10 = min(result[currency_name][-10:])
-    day_ago = (datetime.now() - (result.index[result[currency_name] == last_10][0]))
     plt.plot(result[currency_name], label=currency_name)
     plt.plot(result['Предсказание на завтра'], label='предсказание')
     plt.legend()
     graf_name = currency_name + '_fig.png'
     plt.savefig(graf_name)
-    plt.show()
+
     bot.send_message(message.chat.id, '************')
     #bot.send_message(message.chat.id, f'Код валюты: {currency_name}')
     try:
@@ -221,11 +216,14 @@ def job(message):
     for currency in currences:
         storage(currency)
         pred(message, currency)
+def every_day_job():
+    for currency in currences:
+        storage(currency)
+    bot.infinity_polling(interval=0, timeout=20)
 
 
-bot.infinity_polling(interval=0, timeout=20)
 
-schedule.every().day.at("09:00").do(job)
+schedule.every().day.at("14:30").do(every_day_job)
 while True:
     schedule.run_pending()
     time.sleep(1)
